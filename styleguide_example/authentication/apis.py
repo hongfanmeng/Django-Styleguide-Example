@@ -14,8 +14,6 @@ from styleguide_example.users.models import BaseUser
 
 class UserJwtLoginApi(ObtainJSONWebTokenView):
     def post(self, request, *args, **kwargs):
-        # We are redefining post so we can change the response status on success
-        # Mostly for consistency with the session-based API
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == status.HTTP_201_CREATED:
@@ -28,10 +26,15 @@ class UserJwtLogoutApi(ApiAuthMixin, APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        auth_logout(request.user)
+        # try to logout, user might provide invalid token
+        try:
+            auth_logout(request.user)
+        except Exception:
+            pass
 
         response = Response()
 
+        # delete cookie even if logout failed
         if settings.JWT_AUTH["JWT_AUTH_COOKIE"] is not None:
             response.delete_cookie(settings.JWT_AUTH["JWT_AUTH_COOKIE"])
 
