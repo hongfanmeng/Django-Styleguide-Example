@@ -35,7 +35,6 @@ LOCAL_APPS = [
     "styleguide_example.tasks.apps.TasksConfig",
     "styleguide_example.api.apps.ApiConfig",
     "styleguide_example.users.apps.UsersConfig",
-    "styleguide_example.testing_examples.apps.TestingExamplesConfig",
     "styleguide_example.integrations.apps.IntegrationsConfig",
     "styleguide_example.files.apps.FilesConfig",
     "styleguide_example.emails.apps.EmailsConfig",
