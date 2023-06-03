@@ -1,51 +1,15 @@
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
 from rest_framework import serializers, status
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_jwt.views import ObtainJSONWebTokenView
 
 from styleguide_example.api.mixins import ApiAuthMixin
 from styleguide_example.authentication.services import auth_logout
-from styleguide_example.users.selectors import user_get_login_data
-
-
-class UserSessionLoginApi(APIView):
-    """
-    Following https://docs.djangoproject.com/en/3.1/topics/auth/default/#how-to-log-a-user-in
-    """
-
-    class InputSerializer(serializers.Serializer):
-        email = serializers.EmailField()
-        password = serializers.CharField()
-
-    def post(self, request):
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        user = authenticate(request, **serializer.validated_data)
-
-        if user is None:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        login(request, user)
-
-        data = user_get_login_data(user=user)
-        session_key = request.session.session_key
-
-        return Response({"session": session_key, "data": data})
-
-
-class UserSessionLogoutApi(APIView):
-    def get(self, request):
-        logout(request)
-
-        return Response()
-
-    def post(self, request):
-        logout(request)
-
-        return Response()
+from styleguide_example.users.models import BaseUser
 
 
 class UserJwtLoginApi(ObtainJSONWebTokenView):
@@ -61,6 +25,8 @@ class UserJwtLoginApi(ObtainJSONWebTokenView):
 
 
 class UserJwtLogoutApi(ApiAuthMixin, APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         auth_logout(request.user)
 
@@ -72,8 +38,16 @@ class UserJwtLogoutApi(ApiAuthMixin, APIView):
         return response
 
 
-class UserMeApi(ApiAuthMixin, APIView):
-    def get(self, request):
-        data = user_get_login_data(user=request.user)
+class UserMeApi(ApiAuthMixin, GenericAPIView, RetrieveModelMixin):
+    class OutputSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = BaseUser
+            fields = ("id", "email", "is_admin")
 
-        return Response(data)
+    serializer_class = OutputSerializer
+
+    def get_object(self):
+        return self.request.user
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
