@@ -134,5 +134,3 @@ dmypy.json
 
 node_modules/
 package*.json
-
-google_client_secret.json
